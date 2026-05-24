@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/rs/cors"
 	"github.com/yolbert28/deliver_love_letter/internal/store"
 	"github.com/yolbert28/deliver_love_letter/internal/transport"
 )
@@ -55,6 +56,18 @@ func main() {
 	mux.HandleFunc("PUT /letters/{id}", handler.Update)
 	mux.HandleFunc("DELETE /letters/{id}", handler.Delete)
 
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{
+			"https://love-letter-frontend-roan.vercel.app",
+			"http://localhost:3000",
+		},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "Authorization"},
+		AllowCredentials: true,
+	})
+
+	handlerWithCORS := c.Handler(mux)
+
 	log.Println("Servidor corriendo en :8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	log.Fatal(http.ListenAndServe(":8080", handlerWithCORS))
 }
