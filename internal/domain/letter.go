@@ -6,4 +6,5 @@ type Letter struct {
 	OpenedCount int    `json:"opened_count"`
 	LastOpened  string `json:"last_opened"`
 	Date        string `json:"show_date"`
+	LikeCount   int    `json:"like_count"`
 }

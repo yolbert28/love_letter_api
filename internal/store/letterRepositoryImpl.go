@@ -16,7 +16,7 @@ func NewLetterRepository(db *sql.DB) domain.LetterRepository {
 
 func (r *letterRepository) Create(letter domain.Letter) (domain.Letter, error) {
 
-	err := r.db.QueryRow(`INSERT INTO letter(content, show_date) VALUES ($1, $2) RETURNING id, content, opened_count, COALESCE(last_opened::text, ''), show_date
+	err := r.db.QueryRow(`INSERT INTO letter(content, show_date) VALUES ($1, $2) RETURNING id, content, opened_count, COALESCE(last_opened::text, ''), show_date, like_count
 	`, letter.Content, letter.Date).
 		Scan(
 			&letter.ID,
@@ -24,6 +24,7 @@ func (r *letterRepository) Create(letter domain.Letter) (domain.Letter, error) {
 			&letter.OpenedCount,
 			&letter.LastOpened,
 			&letter.Date,
+			&letter.LikeCount,
 		)
 
 	if err != nil {
@@ -35,7 +36,7 @@ func (r *letterRepository) Create(letter domain.Letter) (domain.Letter, error) {
 
 func (r *letterRepository) GetAll() ([]domain.Letter, error) {
 	rows, err := r.db.Query(`
-		SELECT id, content, opened_count, COALESCE(last_opened::text, ''), show_date 
+		SELECT id, content, opened_count, COALESCE(last_opened::text, ''), show_date, like_count 
 		FROM letter 
 		ORDER BY show_date DESC
 	`)
@@ -48,7 +49,7 @@ func (r *letterRepository) GetAll() ([]domain.Letter, error) {
 	letters := make([]domain.Letter, 0)
 	for rows.Next() {
 		var l domain.Letter
-		if err := rows.Scan(&l.ID, &l.Content, &l.OpenedCount, &l.LastOpened, &l.Date); err != nil {
+		if err := rows.Scan(&l.ID, &l.Content, &l.OpenedCount, &l.LastOpened, &l.Date, &l.LikeCount); err != nil {
 			return nil, err
 		}
 		letters = append(letters, l)
@@ -60,7 +61,7 @@ func (r *letterRepository) GetByDate(date string) (*domain.Letter, error) {
 	var letter domain.Letter
 
 	err := r.db.QueryRow(`
-		SELECT id, content, opened_count, COALESCE(last_opened::text, ''), show_date 
+		SELECT id, content, opened_count, COALESCE(last_opened::text, ''), show_date, like_count 
 		FROM letter 
 		WHERE show_date = $1
 	`, date).Scan(
@@ -69,6 +70,7 @@ func (r *letterRepository) GetByDate(date string) (*domain.Letter, error) {
 		&letter.OpenedCount,
 		&letter.LastOpened,
 		&letter.Date,
+		&letter.LikeCount,
 	)
 
 	if err != nil {
@@ -88,14 +90,19 @@ func (r *letterRepository) IncrementTapCount(date string) error {
 	return err
 }
 
+func (r *letterRepository) IncrementLikeCount(id int) error {
+	_, err := r.db.Exec(`UPDATE letter SET like_count = like_count + 1 WHERE id = $1`, id)
+	return err
+}
+
 func (r *letterRepository) Update(letter domain.Letter) (*domain.Letter, error) {
 	err := r.db.QueryRow(`
 		UPDATE letter 
 		SET content = $1, show_date = $2
 		WHERE id = $3 
-		RETURNING id, content, opened_count, COALESCE(last_opened::text, ''), show_date
+		RETURNING id, content, opened_count, COALESCE(last_opened::text, ''), show_date, like_count
 	`, letter.Content, letter.Date, letter.ID).
-		Scan(&letter.ID, &letter.Content, &letter.OpenedCount, &letter.LastOpened, &letter.Date)
+		Scan(&letter.ID, &letter.Content, &letter.OpenedCount, &letter.LastOpened, &letter.Date, &letter.LikeCount)
 
 	if err != nil {
 		return nil, err

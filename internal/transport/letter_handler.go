@@ -105,6 +105,28 @@ func (h *LetterHandler) IncrementTapCount(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// POST /letters/{id}/like
+func (h *LetterHandler) IncrementLikeCount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.repo.IncrementLikeCount(id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // PUT /letters/{id}
 func (h *LetterHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {

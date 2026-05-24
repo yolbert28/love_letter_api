@@ -53,6 +53,7 @@ func main() {
 	mux.HandleFunc("GET /letters", handler.GetAll)
 	mux.HandleFunc("GET /letters/date", handler.GetByDate)
 	mux.HandleFunc("POST /letters/tap", handler.IncrementTapCount)
+	mux.HandleFunc("POST /letters/like/{id}", handler.IncrementLikeCount)
 	mux.HandleFunc("PUT /letters/{id}", handler.Update)
 	mux.HandleFunc("DELETE /letters/{id}", handler.Delete)
 
